@@ -1,10 +1,7 @@
 # pcap2csv
 Use PyShark and scapy to read fields from a pcap file and populate a CSV
 
-Script to extract specific pieces of information from a pcap file and
-render into a csv file.
-
-    Usage: <program name> --pcap <input pcap file> --csv <output pcap file>
+    Usage: pcap2csv --pcap <input pcap file> --csv <output pcap file>
 
 Each packet in the pcap is rendered into one row of the csv file.
 The specific items to extract, and the order in which they are rendered
