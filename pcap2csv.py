@@ -73,6 +73,9 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
     #       |   o--------------------------------------> {1}  time
     #       o------------------------------------------> {0}  frame number
 
+    # Example:
+    # 1|0.0|DNS(UDP)|Standard query 0xf3de A www.cisco.com|192.168.1.116:57922|1.1.1.1:53|73|f3de010000010000000000000377777705636973636f03636f6d0000010001
+
     print(fmt.format(pkt_sh.no,               # {0}
                      pkt_sh.time,             # {1}
                      pkt_sh.protocol,         # {2}
