@@ -38,8 +38,12 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
 
     fh_csv is the csv file handle
     """
+    ether_pkt_sc = Ether(pkt_sc)
+    if ether_pkt_sc.type != 0x800:
+        print('Ignoring non-IP packet')
+        return False
 
-    ip_pkt_sc = Ether(pkt_sc)[IP]       # <<<< Assuming Ethernet + IPv4 here
+    ip_pkt_sc = ether_pkt_sc[IP]       # <<<< Assuming Ethernet + IPv4 here
     proto = ip_pkt_sc.fields['proto']
     if proto == 17:
         udp_pkt_sc = ip_pkt_sc[UDP]
@@ -55,8 +59,8 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
         l4_dport = tcp_pkt_sc.dport
     else:
         # Currently not handling packets that are not UDP or TCP
-        l4_payload_bytes = b'\x00'
-        l4_proto_name = '???'
+        print('Ignoring non-UDP/TCP packet')
+        return False
 
     # Each line of the CSV has this format
     fmt = '{0}|{1}|{2}({3})|{4}|{5}:{6}|{7}:{8}|{9}|{10}'
@@ -88,7 +92,9 @@ def render_csv_row(pkt_sh, pkt_sc, fh_csv):
                      pkt_sh.length,           # {9}
                      l4_payload_bytes.hex()), # {10}
           file=fh_csv)
-#--------------------------------------------------
+
+    return True
+    #--------------------------------------------------
 
 def pcap2csv(in_pcap, out_csv):
     """Main entry function called from main to process the pcap and
@@ -111,22 +117,25 @@ def pcap2csv(in_pcap, out_csv):
     pcap_pyshark.reset()
 
     frame_num = 0
+    ignored_packets = 0
     with open(out_csv, 'w') as fh_csv:
         # Open the pcap file with scapy's RawPcapReader, and iterate over
         # each packet. In each iteration get the PyShark packet as well,
         # and then call render_csv_row() with both representations to generate
         # the CSV row.
-        for pkt_scapy, _, (_, _, _) in RawPcapReader(in_pcap):
+        for (pkt_scapy, _) in RawPcapReader(in_pcap):
             try:
                 pkt_pyshark = pcap_pyshark.next_packet()
                 frame_num += 1
-                render_csv_row(pkt_pyshark, pkt_scapy, fh_csv)
+                if not render_csv_row(pkt_pyshark, pkt_scapy, fh_csv):
+                    ignored_packets += 1
             except StopIteration:
                 # Shouldn't happen because the RawPcapReader iterator should also
                 # exit before this happens.
                 break
 
-    print('{} packets read'.format(frame_num))
+    print('{} packets read, {} packets not written to CSV'.
+          format(frame_num, ignored_packets))
 #--------------------------------------------------
 
 def command_line_args():
